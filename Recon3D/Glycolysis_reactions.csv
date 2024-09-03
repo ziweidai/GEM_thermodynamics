@@ -1,0 +1,11 @@
+Reaction,Average dGr,Direction
+atp[c] + glc_D[c] = h[c] + adp[c] + g6p[c],-28.79905948,1
+g6p[c] = f6p[c],-1.797816184,1
+atp[c] + f6p[c] = h[c] + adp[c] + fdp[c],-7.273380638,1
+fdp[c] = dhap[c] + g3p[c],-0.834996362,1
+dhap[c] = g3p[c],3.486253223,1
+pi[c] + nad[c] + g3p[c] = h[c] + nadh[c] + 13dpg[c],-19.95291566,1
+atp[c] + 3pg[c] = adp[c] + 13dpg[c],27.00129459,-1
+2pg[c] = 3pg[c],7.518333722,-1
+2pg[c] = h2o[c] + pep[c],16.68722917,1
+h[c] + adp[c] + pep[c] = atp[c] + pyr[c],-23.6983249,1
