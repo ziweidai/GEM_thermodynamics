@@ -27,7 +27,6 @@ for i = 1:n_rxns
 end
 Recon3D.rxnClasses = rxn_class;
 
-
 % Read real reaction Gibbs free energy and flux configurations from file
 prediction_model_names = ["eQuilibrator","dGbyG"];
 n_rxns = length(Recon3D.rxns);
@@ -190,7 +189,8 @@ n_topo_features = size(x,2);
 rxn_topo_features_offset = zeros(1,n_topo_features);
 for i = 1:n_topo_features
     if min(x(:,i))==0
-        rxn_topo_features_offset(i) = min(x(x(:,i)>0,i));
+        %rxn_topo_features_offset(i) = min(x(x(:,i)>0,i));
+        rxn_topo_features_offset(i) = quantile(x(x(:,i)>0,i),0.05);
     end
 end
 x(isinf(x)) = 100; % Distance between two disconnected nodes assumed to be 10
@@ -235,7 +235,7 @@ title("ROC for the random-forest model predicting TDR/NTDR from network topology
 
 %% Plot distribution of network topology features in different types of rxns
 figure;
-m = n_topo_features;% - 1;
+m = n_topo_features - 1;
 for n = 1:2
     for i = 1:m
         subplot(2,m,i+(n-1)*m);
@@ -251,11 +251,14 @@ for n = 1:2
 
         labels = labels(idx_true_reaction);
         violinplot(data,labels,'ViolinColor',[87 127 219]/255);
-        title(strcat(prediction_model_names{n},'.',topo_feature_names{i}));
+        title(topo_feature_names{i});
         p = ranksum(data(ismember(labels,"TDR")),data(ismember(labels,"NTDR")));
         annotation('textbox',[i*0.2 (3-n)*0.4 0.1 0.1],'String', ...
             sprintf("Wilcoxon's rank-sum p = %.2e",p), 'EdgeColor','none');
         box on;
+        if i == 1
+            ylabel(prediction_model_names{n});
+        end
     end
 end
 
@@ -350,6 +353,28 @@ for n = 1:2
     annotation('textbox',[n*0.3 0.6 0.1 0.1],'String', ...
         sprintf("Wilcoxon's rank-sum p = %.2e",p), 'EdgeColor','none');
 end
+
+%% Plot thermodynamic parameters for reactions in glycolysis
+rxn_eqns = cell(n_rxns,1);
+rxn_eqns_full = cell(n_rxns,1);
+for i = 1:n_rxns
+    rxn_eqns{i} = convertStringsToChars(print_reaction(Recon3D,i));  
+end
+glycolysis_rxn_info = readtable("Glycolysis_reactions.csv","ReadVariableNames",true);
+[~,idx_glycolysis] = ismember(glycolysis_rxn_info.Reaction,rxn_eqns);
+glycolysis_std_dG_textbook = [-16.7 1.7 -14.2 23.8 7.5 6.3 -18.8 4.4 7.5 -31.4];
+glycolysis_rxn_names = ["HK","GPI","PFK","ALDO","TPI","GAPDH","PGK","PGAM","ENO","PK"];
+figure;
+n=2;
+plot(1:10,thermodynamic_data{n}.("Standard dGr")(idx_glycolysis).*glycolysis_rxn_info.Direction,...
+    "Color",[0.9451 0.7412 0.2353]);
+hold on;
+plot(1:10,glycolysis_std_dG_textbook,"Color",[0.3412 0.4980 0.8588]);
+xticks(1:10);
+xticklabels(glycolysis_rxn_names);
+ylabel("\Delta_rG^o");
+legend(["dGbyG","Literature"]);
+title("Standard Gibbs free energy of reactions in glycolysis");
     
 
 
