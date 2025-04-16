@@ -157,7 +157,8 @@ n_topo_features = size(x,2);
 rxn_topo_features_offset = zeros(1,n_topo_features);
 for i = 1:n_topo_features
     if min(x(:,i))==0
-        rxn_topo_features_offset(i) = min(x(x(:,i)>0,i));
+        %rxn_topo_features_offset(i) = min(x(x(:,i)>0,i));
+        rxn_topo_features_offset(i) = quantile(x(x(:,i)>0,i),0.05);
     end
 end
 x(isinf(x)) = 100; % Distance between two disconnected nodes assumed to be 10
@@ -219,11 +220,14 @@ for n = 1:2
 
         labels = labels(idx_true_reaction);
         violinplot(data,labels,'ViolinColor',[87 127 219]/255);
-        title(strcat(prediction_model_names{n},'.',topo_feature_names{i}));
+        title(topo_feature_names{i});
         p = ranksum(data(ismember(labels,"TDR")),data(ismember(labels,"NTDR")));
         annotation('textbox',[i*0.2 (3-n)*0.4 0.1 0.1],'String', ...
             sprintf("Wilcoxon's rank-sum p = %.2e",p), 'EdgeColor','none');
         box on;
+        if i == 1
+            ylabel(prediction_model_names{n});
+        end
     end
 end
 
@@ -236,50 +240,44 @@ labels_full = labels;
 labels_str = ["<=2","3","4","5","6",">=7"];
 median_std_dG = zeros(2,6);
 median_rxn_dG = zeros(2,6);
-
-for n = 1:2
-    subplot(1,2,n);
-    data = thermodynamic_data{n}.("Average dGr");
-    
-    flux_table = flux_data{n};
-    flux_matrix_tr = table2array(flux_table)';
-    idx_nonzero = find(max(abs(flux_matrix_tr)) > 0);
-    data = data(intersect(idx_nonzero, idx_true_reaction));
-    labels = labels_full(intersect(idx_nonzero, idx_true_reaction));
-    violinplot(data(~isnan(data)),labels(~isnan(data)),...
-        'ViolinColor',[87 127 219]/255);
-    box on;
-    title(prediction_model_names{n});
-    ylabel("Average \Delta_rG");
-    xticklabels(labels_str);
-    ylim([-500 300]);
-    xlabel("Distance to nutrient uptake reaction");
-    for i = 1:6
-        x = data(labels == i+1);
-        median_rxn_dG(n,i) = nanmedian(x);
-    end
+n = 2;
+subplot(1,2,1);
+data = thermodynamic_data{n}.("Average dGr");
+flux_table = flux_data{n};
+flux_matrix_tr = table2array(flux_table)';
+idx_nonzero = find(max(abs(flux_matrix_tr)) > 0);
+data = data(intersect(idx_nonzero, idx_true_reaction));
+labels = labels_full(intersect(idx_nonzero, idx_true_reaction));
+violinplot(data(~isnan(data)),labels(~isnan(data)),...
+    'ViolinColor',[87 127 219]/255);
+box on;
+title("Distribution of average \Delta_rG in reactions with different distances to nutrient uptake reactions");
+ylabel("Average \Delta_rG [kJ/mol]");
+xticklabels(labels_str);
+ylim([-500 300]);
+xlabel("Distance to nutrient uptake reaction");
+for i = 1:6
+    x = data(labels == i+1);
+    median_rxn_dG(n,i) = nanmedian(x);
 end
 
-figure;
-for n = 1:2
-    subplot(1,2,n);
-    data = thermodynamic_data{n}.("Standard dGr");
-    
-    data = data(idx_true_reaction);
-    labels = labels_full(idx_true_reaction);
-    violinplot(data(~isnan(data)),labels(~isnan(data)),...
-        'ViolinColor',[87 127 219]/255);
-    box on;
-    title(prediction_model_names{n});
-    ylabel("\Delta_rG^o");
-    xticklabels(labels_str);
-    ylim([-500 300]);
-    xlabel("Distance to nutrient uptake reaction");
-    for i = 1:6
-        x = data(labels == i+1);
-        median_std_dG(n,i) = nanmedian(x);
-    end
+subplot(1,2,2);
+data = thermodynamic_data{n}.("Standard dGr");
+data = data(idx_true_reaction);
+labels = labels_full(idx_true_reaction);
+violinplot(data(~isnan(data)),labels(~isnan(data)),...
+    'ViolinColor',[87 127 219]/255);
+box on;
+title("Distribution of \Delta_rG^o in reactions with different distances to nutrient uptake reactions");
+ylabel("\Delta_rG^o [kJ/mol]");
+xticklabels(labels_str);
+ylim([-500 300]);
+xlabel("Distance to nutrient uptake reaction");
+for i = 1:6
+    x = data(labels == i+1);
+    median_std_dG(n,i) = nanmedian(x);
 end
+
 
 %% Compare proteomics-based features between TDRs and NTDRs
 figure;
